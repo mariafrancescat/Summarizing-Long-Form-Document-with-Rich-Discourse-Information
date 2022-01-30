@@ -11,8 +11,11 @@ import wandb
 config = ConfigReader()
 outputManager = OutputManager(config.output_folder)
 if config.wandb:
-    wandb.init(project="Summarizing-Long-Form-Document-with-Rich-Discourse-Information", entity="riz98")
-    wandb.config = config.getConfigDict()
+    wandb.init(
+        project="Summarizing-Long-Form-Document-with-Rich-Discourse-Information", 
+        entity="riz98",
+        config = {})
+    wandb.config.update(config.getConfigDict())
 
 if config.logging:
     outputManager.writeLog(config.getConfigDict())
@@ -25,9 +28,13 @@ print('Creating model')
 model = ContentRanking(data.tokenizer,**config.model_params)
 model.to(config.device)
 
+if config.wandb:
+    wandb.watch(model, log="all", log_freq=10)
+
 loss_fn = config.loss()
 optimizer = config.optimizer(model.parameters(), **config.optimizer_params)
 
+model.train()
 for e in range(config.training_epochs):
     epoch_loss = 0
     for batch, (data, sections_gold, sentences_gold) in enumerate(train_dataloader):
@@ -41,7 +48,6 @@ for e in range(config.training_epochs):
         outputManager.writeLog(f'Epoch {e}/{config.training_epochs}. Loss: {epoch_loss}')
     if config.wandb:
         wandb.log({"loss": epoch_loss})
-        wandb.watch(model)
     if config.save_model:
         outputManager.saveModel(model)
     print(f'Epoch {e}/{config.training_epochs}. Loss: {epoch_loss}')
