@@ -6,7 +6,7 @@ from src.models.attention_mechanism.attention import Attention
 from src.models.embedding.gloveEmbedding import Glove25Embedding
 
 class ContentRanking(nn.Module):
-    def __init__(self, tokenizer, embedding_dim):
+    def __init__(self, tokenizer, embedding_dim=25):
         super(ContentRanking, self).__init__()
         self.embedding_dim = embedding_dim
         self.embedding = self.getEmbedder(embedding_dim)(tokenizer)
@@ -72,7 +72,7 @@ class ExtractiveSummarization(nn.Module):
     def __init__(self):
         super(ExtractiveSummarization, self).__init__()
     
-    def forward(self, d: Document):
+    def forward(self, d):
         pass
 
 
@@ -80,5 +80,5 @@ class Heroes(nn.Module):
     def __init__(self):
         super(Heroes, self).__init__()
     
-    def forward(self, d: Document):
+    def forward(self, d):
         pass 

@@ -1,0 +1,22 @@
+{
+    "device":"cpu",
+    "model": {"name":"ContentRanking","config":"ContentRanking.json"},
+    "training_dataset":{
+        "file_path":"arxiv_train_subset.json",
+        "max_sections":4,
+        "max_sentences_per_section":100,
+        "padding":30
+    },
+    "training_epochs":5,
+    "training_batch":2,
+    "optimizer":{
+        "name":"SGD",
+        "lr":0.001
+    },
+    "loss":"ContentRankingLoss",
+    "output":{
+        "folder":"Experiment_1",
+        "save_model":true,
+        "logging":true
+    }
+}
