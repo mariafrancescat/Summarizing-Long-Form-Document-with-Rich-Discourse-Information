@@ -7,7 +7,7 @@
         "max_sentences_per_section":100,
         "padding":30
     },
-    "training_epochs":5,
+    "training_epochs":25,
     "training_batch":2,
     "optimizer":{
         "name":"SGD",
@@ -15,8 +15,9 @@
     },
     "loss":"ContentRankingLoss",
     "output":{
-        "folder":"Experiment_1",
+        "folder":"Test_run",
         "save_model":true,
-        "logging":true
+        "logging":true,
+        "wandb":true
     }
 }

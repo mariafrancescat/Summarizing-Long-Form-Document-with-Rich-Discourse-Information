@@ -4,6 +4,7 @@ from src.losses import *
 import torch
 import shutil
 import os
+import copy
 
 class ConfigReader:
     def __init__(self):      
@@ -20,7 +21,9 @@ class ConfigReader:
         self.__OutputSetup(self.__config['output'])
 
     def getConfigDict(self):
-        return self.__config
+        total_config = copy.deepcopy(self.__config)
+        total_config.update({'model_params':self.model_params})
+        return total_config
 
     def __modelMapper(self,model):
         models = {
@@ -56,4 +59,5 @@ class ConfigReader:
         os.mkdir(self.output_folder)
         self.save_model = data['save_model']
         self.logging = data['logging']
+        self.wandb = data['wandb']
             
