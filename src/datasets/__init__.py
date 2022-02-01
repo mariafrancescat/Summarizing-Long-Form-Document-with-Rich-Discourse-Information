@@ -1,1 +1,1 @@
-from src.datasets.documentDataset import Document, Section, Sentence, DocumentDataset
+from src.datasets.documentDataset import *

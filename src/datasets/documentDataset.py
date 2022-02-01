@@ -56,7 +56,7 @@ class Document():
     
 
 class DocumentDataset(Dataset):
-    def __init__(self, dataPath:str, padding:int) -> None:
+    def __init__(self, data_path:str, params:dict, tokenizer, validation_set=False, pre_trained_tokenizer = None) -> None:
         '''
         json format for each document:
         { 
@@ -67,20 +67,23 @@ class DocumentDataset(Dataset):
             'sections': List[List[str]]
         }
         '''
-        f = open(dataPath,'r')
+        f = open(f'./data/{data_path}','r')
         data = json.load(f)
         f.close()
-
-        self.tokenizer = Arxiv_preprocess(padding)
-        for doc in tqdm(data[:4],desc='Preparing Tokenizer'):
-            for sentence in doc['abstract_text']:
-                self.tokenizer.add_sentence(sentence)
-            for section in doc['sections']:
-                for sentence in section:
+        padding = params['padding']
+        if not validation_set:
+            self.tokenizer = tokenizer['class'](**tokenizer['params'])
+            for doc in tqdm(data[:4],desc='Preparing Tokenizer'):
+                for sentence in doc['abstract_text']:
                     self.tokenizer.add_sentence(sentence)
-            for section_title in doc['section_names']:
-                self.tokenizer.add_sentence(section_title)
-        self.tokenizer.fit_tokenizer()
+                for section in doc['sections']:
+                    for sentence in section:
+                        self.tokenizer.add_sentence(sentence)
+                for section_title in doc['section_names']:
+                    self.tokenizer.add_sentence(section_title)
+            self.tokenizer.fit_tokenizer()
+        else:
+            self.tokenizer = pre_trained_tokenizer
 
         self.documents = []
         for doc in tqdm(data[:4],desc='Reading documents'):
@@ -106,7 +109,8 @@ class DocumentDataset(Dataset):
             self.documents.append(Document(sectionList))
 
     def __len__(self) -> int:
-        return sum([len(d) for d in self.documents])
+        #return sum([len(d) for d in self.documents])
+        return len(self.documents)
 
     def __getitem__(self, index:int) -> Document:
         return self.documents[index]

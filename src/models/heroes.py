@@ -33,24 +33,24 @@ class ContentRanking(nn.Module):
         return embedders[embedding_dim]
 
         
-    def forward(self, batch_documents: list):
+    def forward(self, batch_documents: list, device='cpu'):
         titles = batch_documents['titles']
-        title_embeds = self.embedding(titles) 
+        title_embeds = self.embedding(titles)
         title_embeds = torch.swapaxes(title_embeds,0,1) #title_embeds shape -> [section, document, title, embed]
-        title_store = torch.zeros(title_embeds.shape[0], title_embeds.shape[1],title_embeds.shape[3]*2) #shape -> [doc, embed*2]
+        title_store = torch.zeros((title_embeds.shape[0], title_embeds.shape[1],title_embeds.shape[3]*2),device=device) #shape -> [doc, embed*2]
         for i,title_section in enumerate(title_embeds):
             title_embed, _ = self.titleEncoder(title_section)
             title_embed = self.titleAttention(title_embed)
             title_store[i] = title_embed
         sections = batch_documents['sections'] #2,4,100,30
         section_embeds = self.embedding(sections)
-        sentences_importance = torch.zeros(section_embeds.size()[0],section_embeds.size()[1],section_embeds.size()[2]) # (doc,sect,sent)
+        sentences_importance = torch.zeros((section_embeds.size()[0],section_embeds.size()[1],section_embeds.size()[2]),device=device) # (doc,sect,sent)
         section_embeds = torch.swapaxes(section_embeds,0,1)
         section_embeds = torch.swapaxes(section_embeds,1,2) # section_embeds shape -> [section, sentence, doc, word]
 
-        sections_importance = torch.zeros(section_embeds.shape[0],section_embeds.shape[2],1)
+        sections_importance = torch.zeros((section_embeds.shape[0],section_embeds.shape[2],1),device=device)
         for section_id, section in enumerate(section_embeds):
-            sentence_store = torch.zeros(section.size()[0],section.size()[1],section.size()[3]*2)
+            sentence_store = torch.zeros((section.size()[0],section.size()[1],section.size()[3]*2),device=device)
             for i,sentence in enumerate(section):
                 sentence_embeds, _ = self.sentenceEncoder(sentence)
                 sentence_embeds = self.sentenceAttention(sentence_embeds)
@@ -67,6 +67,7 @@ class ContentRanking(nn.Module):
             sections_importance[section_id] = section_importance
         sections_importance = torch.swapaxes(sections_importance,0,1)
         return sections_importance, sentences_importance
+
 
 class ExtractiveSummarization(nn.Module):
     def __init__(self):

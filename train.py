@@ -4,11 +4,14 @@ from src.utils.preprocess import *
 from src.utils.dataloader import ArxivDataLoader
 from torch.utils.data import DataLoader
 from src.losses.contentRankingLoss import ContentRankingLoss
-from src.utils.configReader import ConfigReader
+from src.utils.configReader import ConfigReader, ModelConfig
 from src.utils.outputManager import OutputManager
 import wandb
+import sys
 
+sys.setrecursionlimit(10000)
 config = ConfigReader()
+
 outputManager = OutputManager(config.output_folder)
 if config.wandb:
     wandb.init(
@@ -20,34 +23,34 @@ if config.wandb:
 if config.logging:
     outputManager.writeLog(config.getConfigDict())
 
-data = DocumentDataset(config.file_path, config.padding)
-train_dataloader = ArxivDataLoader(data.documents, batch_size=config.training_batch, shuffle=True,
-    padding=config.padding, max_sections=config.max_sections,max_sentences=config.max_sentences_per_section)
 
-print('Creating model')
-model = ContentRanking(data.tokenizer,**config.model_params)
-model.to(config.device)
+for modelConfig in config.models:
+    if modelConfig.do_train:
+        dataset = modelConfig.training['dataset']['class'](**modelConfig.training['dataset']['params']) 
+        dataloader = modelConfig.training['dataloader']['class'](dataset,**modelConfig.training['dataloader']['params'])
+        
+        validationset = modelConfig.training['validation']['class'](**modelConfig.training['validation']['params'],
+            validation_set=True, pre_trained_tokenizer = dataset.tokenizer)
+        validation_loader = modelConfig.training['dataloader']['class'](validationset,**modelConfig.training['dataloader']['params'])
+        
+        loss = modelConfig.training['loss']['class'](**modelConfig.training['loss']['params'])
+        loss = loss.to(config.device)
+        if modelConfig.modelParams['tokenizer']:
+            model = modelConfig.modelClass(dataset.tokenizer,**modelConfig.modelParams['params'])
+        else:
+            model = modelConfig.modelClass(**modelConfig.modelParams['params'])
+        model = model.to(config.device)
+        optimizer = modelConfig.training['optimizer']['class'](model.parameters(),**modelConfig.training['optimizer']['params'])
+        #TODO: how to manage wrapper in dataset?
+        trainer = modelConfig.training['training_class'](
+            model,dataloader, validation_loader, 
+            modelConfig.training['epochs'],
+            loss, optimizer, config, outputManager
+        )
+        trainer.train()
+    else:
+        model = None #TODO: load model from modelConfig.pretrained_model
+    if modelConfig.do_inference:
+        pass
+        #TODO: implementing method
 
-if config.wandb:
-    wandb.watch(model, log="all", log_freq=10)
-
-loss_fn = config.loss()
-optimizer = config.optimizer(model.parameters(), **config.optimizer_params)
-
-model.train()
-for e in range(config.training_epochs):
-    epoch_loss = 0
-    for batch, (data, sections_gold, sentences_gold) in enumerate(train_dataloader):
-        sections_importance, sentences_importance = model(data)
-        loss = loss_fn(sections_importance, sentences_importance, sections_gold, sentences_gold)
-        epoch_loss+= loss.item()
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-    if config.logging:
-        outputManager.writeLog(f'Epoch {e}/{config.training_epochs}. Loss: {epoch_loss}')
-    if config.wandb:
-        wandb.log({"loss": epoch_loss})
-    if config.save_model:
-        outputManager.saveModel(model)
-    print(f'Epoch {e}/{config.training_epochs}. Loss: {epoch_loss}')

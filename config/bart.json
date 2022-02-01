@@ -1,0 +1,20 @@
+{
+    "train":{
+        "training_dataset":{
+            "from_wrapper":"ContentRanking",
+            "file_path":null,
+            "validation_path":null
+        },
+        "training_epochs":25,
+        "training_batch":2,
+        "optimizer":{
+            "name":"SGD",
+            "lr":0.001
+        },
+        "loss":"TODO"
+    },
+    "inference":{
+        "from_wrapper":"ContentRanking",
+        "file_path":null
+    }
+}

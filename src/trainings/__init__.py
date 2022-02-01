@@ -1,0 +1,1 @@
+from src.trainings.contentRankingTraining import ContentRankingTraining

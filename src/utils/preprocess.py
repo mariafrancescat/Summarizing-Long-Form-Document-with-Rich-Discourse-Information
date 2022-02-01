@@ -1,9 +1,9 @@
 from keras import preprocessing
 
 class Arxiv_preprocess:
-    def __init__(self, max_lenght:int):
+    def __init__(self, padding:int):
         self.tokenizer = preprocessing.text.Tokenizer()
-        self.max_lenght = max_lenght
+        self.padding = padding
         self.sentences = []
     
     def add_sentence(self, sentence):
@@ -15,4 +15,4 @@ class Arxiv_preprocess:
         self.vocab_length = len(self.tokenizer.word_index) + 1
 
     def get_padded_sentence(self, sentence:str):
-        return preprocessing.sequence.pad_sequences(self.tokenizer.texts_to_sequences([sentence]), self.max_lenght, padding='post')[0]
+        return preprocessing.sequence.pad_sequences(self.tokenizer.texts_to_sequences([sentence]), self.padding, padding='post')[0]
