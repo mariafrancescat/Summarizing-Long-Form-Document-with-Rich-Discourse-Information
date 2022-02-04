@@ -70,10 +70,12 @@ class DocumentDataset(Dataset):
         f = open(f'./data/{data_path}','r')
         data = json.load(f)
         f.close()
+        self.groundtruth = []
         padding = params['padding']
         if not validation_set:
             self.tokenizer = tokenizer['class'](**tokenizer['params'])
             for doc in tqdm(data[:4],desc='Preparing Tokenizer'):
+                self.groundtruth.append(doc['abstract_text'])
                 for sentence in doc['abstract_text']:
                     self.tokenizer.add_sentence(sentence)
                 for section in doc['sections']:

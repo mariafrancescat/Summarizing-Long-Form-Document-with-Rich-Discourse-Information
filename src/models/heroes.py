@@ -6,7 +6,7 @@ from src.models.attention_mechanism.attention import Attention
 from src.models.embedding.gloveEmbedding import Glove25Embedding
 
 class ContentRanking(nn.Module):
-    def __init__(self, tokenizer, embedding_dim=25):
+    def __init__(self, tokenizer=None, embedding_dim=25, device='cpu'):
         super(ContentRanking, self).__init__()
         self.embedding_dim = embedding_dim
         self.embedding = self.getEmbedder(embedding_dim)(tokenizer)
@@ -24,6 +24,7 @@ class ContentRanking(nn.Module):
         self.sectionTitleAttention = Attention(embedding_dim)
         self.sectionTitleImportance = nn.Linear(embedding_dim*2,1)
 
+        self.to(device)
 
     def getEmbedder(self, embedding_dim):
         embedders = {

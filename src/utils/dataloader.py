@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 
 class ArxivDataLoader(DataLoader):
     def __init__(self, dataset, batch_size=2, shuffle=True, padding=30, max_sections=4, max_sentences_per_section=10, device='cpu'):
-        super(ArxivDataLoader,self).__init__(dataset, batch_size=2, shuffle=True, collate_fn = self.custom_collate)
+        super(ArxivDataLoader,self).__init__(dataset, batch_size, shuffle, collate_fn = self.custom_collate)
         self.padding = padding
         self.max_sections = max_sections
         self.max_sentences = max_sentences_per_section
@@ -36,3 +36,13 @@ class ArxivDataLoader(DataLoader):
         section_importance = torch.unsqueeze(section_importance, 2)
         return data, section_importance, sentence_importance
 
+class BartDataLoader():
+    def __init__(self, dataset, batch_size=32, encoder_max_length=100, decoder_max_length=20):
+        data = data.map( 
+            lambda x:x,
+            batched=True, 
+            batch_size=batch_size
+        )
+        data.set_format(
+            type="torch", columns=["input_ids", "attention_mask", "decoder_input_ids", "decoder_attention_mask", "labels"],
+        )

@@ -1,20 +1,46 @@
 {
+    "params":{
+        "tokenizer":false
+    },
+    "tokenizer":null,
     "train":{
+        "training_class":"BartTraining",
         "training_dataset":{
-            "from_wrapper":"ContentRanking",
-            "file_path":null,
-            "validation_path":null
+            "class":"BartDataset",
+            "data_path":null,
+            "params":{
+                "encoder_max_length":40,
+                "decoder_max_length":8
+            }
         },
-        "training_epochs":25,
-        "training_batch":2,
+        "validation_dataset":{
+            "class":"BartDataset",
+            "data_path":null,
+            "params":{
+
+            }
+        },
+        "training_dataloader":{
+            "class":"ArxivDataLoader",
+            "params":{
+                "batch_size":2,
+                "encoder_max_length":40,
+                "decoder_max_length":8
+            }
+        },
+        "training_epochs":2,
         "optimizer":{
-            "name":"SGD",
-            "lr":0.001
+            "name":"default"
         },
-        "loss":"TODO"
+        "loss":{
+            "name":"default"
+        }
     },
     "inference":{
-        "from_wrapper":"ContentRanking",
-        "file_path":null
+        "data_path":"arxiv_test_subset.json",
+        "params":{
+            "number_of_sections":3,
+            "number_of_sentences":8
+        }
     }
 }

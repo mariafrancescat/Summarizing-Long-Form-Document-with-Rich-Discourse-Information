@@ -13,7 +13,6 @@
         "training_class":"ContentRankingTraining",
         "training_dataset":{
             "class":"DocumentDataset",
-            "from_wrapper":null,
             "data_path":"arxiv_train_subset.json",
             "params":{
                 "padding":30
@@ -21,7 +20,6 @@
         },
         "validation_dataset":{
             "class":"DocumentDataset",
-            "from_wrapper":null,
             "data_path":"arxiv_val_subset.json",
             "params":{
                 "padding":30
@@ -47,7 +45,10 @@
         }
     },
     "inference":{
-        "from_wrapper":null,
-        "file_path":"docs.json"
+        "data_path":"arxiv_test_subset.json",
+        "params":{
+            "number_of_sections":3,
+            "number_of_sentences":8
+        }
     }
 }

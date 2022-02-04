@@ -4,9 +4,18 @@
         {
             "name":"ContentRanking",
             "config":"ContentRanking.json",
+            "train":false,
+            "pretrained_model":"./data/models/model.pt",
+            "inference":false,
+            "from_previous":false
+        },
+        {
+            "name":"Bart",
+            "config":"bart.json",
             "train":true,
-            "pretrained_model":"path_to_pretrained",
-            "inference":true
+            "pretrained_model":null,
+            "inference":false,
+            "from_previous":true
         }
     ],
     "output":{

@@ -2,10 +2,11 @@ import torch
 from torch import nn
 
 class ContentRankingLoss(nn.Module):
-    def __init__(self):
+    def __init__(self,device='cpu'):
         super(ContentRankingLoss, self).__init__()
         self.section_loss = nn.BCELoss()
         self.sentence_loss = nn.BCELoss()
+        self.device = device
 
     def forward(self, sections_importance, sentences_importance, sections_gold, sentences_gold):
         loss1 = self.section_loss(sections_importance, sections_gold)

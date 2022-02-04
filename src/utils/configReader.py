@@ -1,5 +1,5 @@
 import json
-from src.models.heroes import *
+from src.models import *
 from src.utils.dataloader import *
 from src.utils.inference import *
 from src.trainings import *
@@ -16,6 +16,7 @@ class ModelConfig:
         self.do_train = model['train']
         self.pretrained_model = model['pretrained_model']
         self.do_inference = model['inference']
+        self.from_previous = model['from_previous']
         self.tokenizer = ConfigReader.tokenizerMapped(modelConfig['tokenizer'])
         self.modelParams = ConfigReader.modelParamsMapped(modelConfig['params'])
         self.training = {
@@ -27,7 +28,7 @@ class ModelConfig:
             'optimizer': ConfigReader.optimizerMapper(modelConfig['train']['optimizer']),
             'loss': ConfigReader.lossMapped(modelConfig['train']['loss'])
         }
-        self.inference = ConfigReader.inferenceMapped(modelConfig['inference'],self.modelClass)
+        self.inference = ConfigReader.inferenceMapped(modelConfig['inference'],self.modelClass, self.training['dataset'], self.training['dataloader'])
     
     def get_dict(self):
         d = {
@@ -61,16 +62,21 @@ class ConfigReader:
         return total_config
 
     @staticmethod
-    def modelMapper(model):
+    def modelMapper(model,config=True):
         models = {
             'ContentRanking': ContentRanking,
+            'Bart': Bart
         }
         m = models[model['name']]
-        model_config = json.load(open(f'./config/{model["config"]}','r'))
-        return m, model_config
+        if config:
+            model_config = json.load(open(f'./config/{model["config"]}','r'))
+            return m, model_config
+        else:
+            return m
 
     @staticmethod
     def optimizerMapper(opt):
+        if opt['name']=='default':return
         optimizers = {
             'SGD': torch.optim.SGD,
         }
@@ -82,6 +88,7 @@ class ConfigReader:
 
     @staticmethod
     def lossMapped(data):
+        if data['name']=='default':return
         losses = {
             'ContentRankingLoss': ContentRankingLoss
         }
@@ -90,42 +97,37 @@ class ConfigReader:
         }
         to_return['class'] = losses[data['name']]
         return to_return
-    
+
     @staticmethod
     def trainingMapped(data):
         trainings = {
-            'ContentRankingTraining': ContentRankingTraining
+            'ContentRankingTraining': ContentRankingTraining,
+            'BartTraining': BartTraining
         }
         return trainings[data]
 
     @staticmethod
     def datasetMapped(data, fromClass, tokenizer):
-        from src.datasets.documentDataset import DocumentDataset
+        from src.datasets import DocumentDataset, BartDataset
         datasets = {
-            'DocumentDataset': DocumentDataset
+            'DocumentDataset': DocumentDataset,
+            'BartDataset': BartDataset
         }
         to_return = {
-            'params': dict([(k,v) for k,v in data.items() if k!='class' and k!='from_wrapper' and k!='tokenizer'])
+            'params': dict([(k,v) for k,v in data.items() if k!='class' and k!='tokenizer'])
         }
         if tokenizer!=None:
             to_return['params']['tokenizer'] = tokenizer
 
         to_return['class'] = datasets[data['class']]
-        if data['from_wrapper']!=None:
-            to_return['from_wrapper'] = ConfigReader.wrapperMapped(data['from_wrapper'],fromClass)
-        else:
-            to_return['from_wrapper'] = None
-        return to_return
 
-    @staticmethod
-    def wrapperMapped(data,fromClass):
-        toClass,_ = ConfigReader.modelMapper(data)
-        return Wrapper.wrapperFromTo(fromClass,toClass)
+        return to_return
 
     @staticmethod
     def dataloaderMapped(data, device):
         dataloaders = {
-            'ArxivDataLoader': ArxivDataLoader
+            'ArxivDataLoader': ArxivDataLoader,
+            'BartDataLoader': BartDataLoader
         }
         to_return = dict([(k,v) for k,v in data.items() if k!='class'])
 
@@ -154,13 +156,14 @@ class ConfigReader:
 
 
     @staticmethod
-    def inferenceMapped(data, fromClass):
-        to_return = dict([(k,v) for k,v in data.items() if k!='from_wrapper'])
+    def inferenceMapped(data, fromClass, dataset, dataloader):
+        to_return = dict([(k,v) for k,v in data.items()])
         to_return['method'] = Inference.inferenceFrom(fromClass)
-        if data['from_wrapper']!=None:
-            to_return['from_wrapper'] = ConfigReader.wrapperMapped(data['from_wrapper'], fromClass)
-        else:
-            to_return['from_wrapper'] = None
+        to_return['dataset'] = dataset
+        to_return['dataset']['params']['data_path'] = data['data_path']
+        to_return['dataloader'] = dataloader
+        to_return['dataloader']['params']['batch_size'] = 1
+        to_return['dataloader']['params']['shuffle'] = False
         return to_return
 
 
