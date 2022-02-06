@@ -1,6 +1,14 @@
 from torch.utils.data import Dataset
 
 class StandardDataset(Dataset):
+    '''
+    [
+        {
+        'doc' -> doc_id
+        'sections' -> [{'title':str, 'sentences':[str]}]
+        }
+    ]
+    '''
     def __init__(self, docs, groundtruth=None):
         assert all([self.__checkDocCompliance(doc) for doc in docs]), 'No correct format for StandardDataset'
         self.docs = docs

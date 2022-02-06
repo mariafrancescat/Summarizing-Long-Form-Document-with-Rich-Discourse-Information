@@ -1,28 +1,29 @@
 from datasets import Dataset
 
-class BartDataset:
+class BartDataset(Dataset):
     def __init__(self, data_path:str, params:dict, tokenizer,
      validation_set=False, pre_trained_tokenizer = None, fromWrapper=False, datasetFromWrapper = None):
-        self.tokenizer = tokenizer
+        
+        self.tokenizer = tokenizer['class'](**tokenizer['params'])
 
         if not fromWrapper:
             f = open(f'./data/{data_path}','r')
             data = json.load(f)
             f.close()
-            # dataset = ...
+            # self.dataset = ...
         else:
-            dataset = datasetFromWrapper
-    
-        inputs = tokenizer(dataset["Text"], padding="max_length", truncation=True, max_length=params['encoder_max_length'])
-        outputs = tokenizer(dataset["Summary"], padding="max_length", truncation=True, max_length=params['decoder_max_length'])
+            self.dataset = datasetFromWrapper
 
-        dataset["input_ids"] = inputs.input_ids
-        dataset["attention_mask"] = inputs.attention_mask
-        dataset["decoder_input_ids"] = outputs.input_ids
-        dataset["decoder_attention_mask"] = outputs.attention_mask
-        dataset["labels"] = outputs.input_ids.copy()
+        inputs = self.tokenizer(self.dataset["Text"])
+        outputs = self.tokenizer(self.dataset["Summary"])
 
-        # because RoBERTa automatically shifts the labels, the labels correspond exactly to `decoder_input_ids`. 
-        # We have to make sure that the PAD token is ignored
-        dataset["labels"] = [[-100 if token == tokenizer.pad_token_id else token for token in labels] for labels in batch["labels"]]
-        dataset.remove_columns(["Text", "Summary"])
+        self.dataset = self.dataset.add_column("input_ids", inputs.input_ids)
+        self.dataset = self.dataset.add_column("attention_mask", inputs.attention_mask)
+        self.dataset = self.dataset.add_column("decoder_input_ids", outputs.input_ids)
+        self.dataset = self.dataset.add_column("decoder_attention_mask", outputs.attention_mask)
+        self.dataset = self.dataset.add_column("labels",[[-100 if token == self.tokenizer.tokenizer.pad_token_id else token for token in labels] for labels in outputs.input_ids.copy()])
+        
+        self.dataset = self.dataset.remove_columns(["Text", "Summary"])
+
+    def __call__(self):
+        return self.dataset

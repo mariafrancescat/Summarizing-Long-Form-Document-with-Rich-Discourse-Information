@@ -2,7 +2,14 @@
     "params":{
         "tokenizer":false
     },
-    "tokenizer":null,
+    "tokenizer":{
+        "class":"BartTokenizer",
+        "params":{
+            "padding":"max_length",
+            "truncation":true,
+            "max_length":100
+        }
+    },
     "train":{
         "training_class":"BartTraining",
         "training_dataset":{
@@ -17,11 +24,12 @@
             "class":"BartDataset",
             "data_path":null,
             "params":{
-
+                "encoder_max_length":40,
+                "decoder_max_length":8
             }
         },
         "training_dataloader":{
-            "class":"ArxivDataLoader",
+            "class":"BartDataLoader",
             "params":{
                 "batch_size":2,
                 "encoder_max_length":40,

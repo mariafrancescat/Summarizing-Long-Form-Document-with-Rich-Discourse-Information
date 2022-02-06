@@ -1,4 +1,5 @@
 from src.models import *
+from src.datasets import *
 
 class Wrapper:
 
@@ -10,14 +11,7 @@ class Wrapper:
         return mapping[toClass]
 
     @staticmethod
-    def toBart(standardDataset):
-        '''
-        receives -> [
-            'doc' -> doc_id
-            'sections' -> [{'title':str, 'sentences':[str]}]
-        ]
-        output -> huggingface dataset:2 columns:'Summary', 'Text'
-        '''
+    def toBart(standardDataset, datasetParams):
         from datasets import Dataset
 
         d = {'Summary':[], 'Text':[]}
@@ -28,4 +22,4 @@ class Wrapper:
                 d['Summary'].append(sentences_concat)
                 d['Text'].append(gt)
 
-        return Dataset.from_dict(d)
+        return BartDataset(**datasetParams, fromWrapper=True, datasetFromWrapper=Dataset.from_dict(d))

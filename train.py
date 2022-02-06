@@ -1,12 +1,7 @@
-from src.datasets.documentDataset import *
-from src.models.heroes import *
-from src.utils.preprocess import *
-from src.utils.dataloader import ArxivDataLoader
-from torch.utils.data import DataLoader
-from src.losses.contentRankingLoss import ContentRankingLoss
-from src.utils.configReader import ConfigReader, ModelConfig
-from src.utils.outputManager import OutputManager
-from src.utils.wrapper import Wrapper
+from src.utils import ConfigReader, ModelConfig
+from src.utils import OutputManager
+from src.utils import Wrapper
+import torch
 import wandb
 import sys
 import copy
@@ -32,17 +27,20 @@ for modelIndex in range(len(config.models)):
     if modelConfig.from_previous:
         assert modelIndex>0, 'First model cannot have wrapper!'
         standard = config.models[modelIndex-1].inference['method'](model,dataloader,config.device,**config.models[modelIndex-1].inference['params'])
-        dataset = Wrapper.wrapperTo(modelConfig.modelClass)(standard)
+        dataset = Wrapper.wrapperTo(modelConfig.modelClass)(standard,modelConfig.training['dataset']['params'])
 
         standard = config.models[modelIndex-1].inference['method'](model,validation_loader,config.device,**config.models[modelIndex-1].inference['params'])
-        validationset = Wrapper.wrapperTo(modelConfig.modelClass)(standard)
+        valid_params = copy.deepcopy(modelConfig.training['validation']['params'])
+        valid_params.update({'validation_set':True, 'pre_trained_tokenizer':dataset.tokenizer})
+        validationset = Wrapper.wrapperTo(modelConfig.modelClass)(standard,valid_params)
     else:
         dataset = modelConfig.training['dataset']['class'](**modelConfig.training['dataset']['params']) 
-        dataloader = modelConfig.training['dataloader']['class'](dataset,**modelConfig.training['dataloader']['params'])
 
         validationset = modelConfig.training['validation']['class'](**modelConfig.training['validation']['params'],
             validation_set=True, pre_trained_tokenizer = dataset.tokenizer)
-        validation_loader = modelConfig.training['dataloader']['class'](validationset,**modelConfig.training['dataloader']['params'])
+
+    dataloader = modelConfig.training['dataloader']['class'](dataset,**modelConfig.training['dataloader']['params'])
+    validation_loader = modelConfig.training['dataloader']['class'](validationset,**modelConfig.training['dataloader']['params'])
 
     if modelConfig.modelParams['tokenizer']:
         model = modelConfig.modelClass(tokenizer=dataset.tokenizer,**modelConfig.modelParams['params'], device=config.device)
@@ -50,11 +48,20 @@ for modelIndex in range(len(config.models)):
         model = modelConfig.modelClass(**modelConfig.modelParams['params'], device=config.device)
     
     if modelConfig.do_train:
-        #TODO: manage bart training       
-        loss = modelConfig.training['loss']['class'](**modelConfig.training['loss']['params'],device=config.device)
-        optimizer = modelConfig.training['optimizer']['class'](model.parameters(),**modelConfig.training['optimizer']['params'])
+        if modelConfig.training['loss']!=None:     
+            loss = modelConfig.training['loss']['class'](**modelConfig.training['loss']['params'],device=config.device)
+        else:
+            loss = None
+        if modelConfig.training['optimizer']!=None:
+            '''
+            TODO: Bart doesn't have parameters()
+            Possible solution -> Complitely drop optimizer for Bart
+            '''
+            optimizer = modelConfig.training['optimizer']['class'](model.parameters(),**modelConfig.training['optimizer']['params'])
+        else:
+            optimizer = None
         trainer = modelConfig.training['training_class'](
-            model,dataloader, validation_loader, 
+            model, dataloader, validation_loader, 
             modelConfig.training['epochs'],
             loss, optimizer, config, outputManager
         )
@@ -71,17 +78,13 @@ for modelIndex in range(len(config.models)):
         validation_set=True, pre_trained_tokenizer = dataset.tokenizer) 
         inference_loader = modelConfig.inference['dataloader']['class'](inferenceset,**modelConfig.inference['dataloader']['params'])
         docs_summary = modelConfig.inference['method'](model,inference_loader,config.device,**modelConfig.inference['params'])
-   
-        '''
-        TODO
-        - Every inference outputs a StandardDataset
-        - Every wrapper transforms a StandardDataset into a specific one
-        - if model i has wrapper:
-            standard = model[i-1](dataset) -> StandardDataset
-            dataset = wrapper(model_class)(standard) -> Specific dataset for model i
-          else:
-            dataset = **read dataset from config** -> Specific dataset for model i
-        - Maybe rename DocumentDataset to ContentRankingDataset
-        - Add to every document the self.groundtruth containing the raw abstracts
-        - if not labelled documents, for StandardDataset self.groundtruth=None
-        '''
+
+'''
+TODO
+- Tune bart parameters (outputlog, epochs, checkpoint)
+- Remove automatic wandb when calling huggingface trainer
+- Add bartDataset by reading from file for inference
+- Implement bart Inference
+- rename all ContentRanking modules
+- Move prepocess/dataloader in tokenizers and dataloaders folder
+'''

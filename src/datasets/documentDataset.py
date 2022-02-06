@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 from torchvision import transforms
-from src.utils.preprocess import Arxiv_preprocess
+from src.utils import Arxiv_preprocess
 import json
 from rouge import Rouge
 import numpy as np
@@ -71,11 +71,14 @@ class DocumentDataset(Dataset):
         data = json.load(f)
         f.close()
         self.groundtruth = []
+
+        for doc in data[:4]:
+            self.groundtruth.append(' '.join(doc['abstract_text']))
+
         padding = params['padding']
         if not validation_set:
             self.tokenizer = tokenizer['class'](**tokenizer['params'])
             for doc in tqdm(data[:4],desc='Preparing Tokenizer'):
-                self.groundtruth.append(doc['abstract_text'])
                 for sentence in doc['abstract_text']:
                     self.tokenizer.add_sentence(sentence)
                 for section in doc['sections']:

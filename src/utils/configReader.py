@@ -1,10 +1,7 @@
 import json
 from src.models import *
-from src.utils.dataloader import *
-from src.utils.inference import *
 from src.trainings import *
 from src.losses import *
-from src.utils.wrapper import *
 import torch
 import shutil
 import os
@@ -78,7 +75,7 @@ class ConfigReader:
     def optimizerMapper(opt):
         if opt['name']=='default':return
         optimizers = {
-            'SGD': torch.optim.SGD,
+            'SGD': torch.optim.SGD
         }
         to_return = {
             'params':dict([(k,v) for k,v in opt.items() if k!='name'])
@@ -125,6 +122,8 @@ class ConfigReader:
 
     @staticmethod
     def dataloaderMapped(data, device):
+        from src.utils import ArxivDataLoader, BartDataLoader
+
         dataloaders = {
             'ArxivDataLoader': ArxivDataLoader,
             'BartDataLoader': BartDataLoader
@@ -137,10 +136,12 @@ class ConfigReader:
     
     @staticmethod
     def tokenizerMapped(data):
-        from src.utils.preprocess import Arxiv_preprocess
+        from src.utils import Bart_tokenizer, Arxiv_preprocess
+
         if data==None: return
         tokenizers = {
-            'Arxiv_preprocess': Arxiv_preprocess
+            'Arxiv_preprocess': Arxiv_preprocess,
+            'BartTokenizer': Bart_tokenizer
         }
         to_return = dict([(k,v) for k,v in data.items() if k!='class'])
         to_return['class'] = tokenizers[data['class']]
@@ -157,6 +158,8 @@ class ConfigReader:
 
     @staticmethod
     def inferenceMapped(data, fromClass, dataset, dataloader):
+        from src.utils import Inference
+
         to_return = dict([(k,v) for k,v in data.items()])
         to_return['method'] = Inference.inferenceFrom(fromClass)
         to_return['dataset'] = dataset
