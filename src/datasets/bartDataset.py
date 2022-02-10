@@ -1,16 +1,25 @@
 from datasets import Dataset
-
+import json
 class BartDataset(Dataset):
     def __init__(self, data_path:str, params:dict, tokenizer,
      validation_set=False, pre_trained_tokenizer = None, fromWrapper=False, datasetFromWrapper = None):
         
         self.tokenizer = tokenizer['class'](**tokenizer['params'])
+        self.raw_docs = None
 
         if not fromWrapper:
             f = open(f'./data/{data_path}','r')
             data = json.load(f)
             f.close()
-            # self.dataset = ...
+            d = {'Summary':[], 'Text':[], 'Doc_id':[]}
+            for doc_id,doc in enumerate(data):
+                abstract = ' '.join(doc['abstract_text'])
+                for sentences_list in doc['sections']:
+                    sentences_concat = ' '.join(sentences_list)
+                    d['Summary'].append(abstract)
+                    d['Text'].append(sentences_concat)
+                    d['Doc_id'].append(doc_id)
+            self.dataset = Dataset.from_dict(d)
         else:
             self.dataset = datasetFromWrapper
 

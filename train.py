@@ -33,6 +33,12 @@ for modelIndex in range(len(config.models)):
         valid_params = copy.deepcopy(modelConfig.training['validation']['params'])
         valid_params.update({'validation_set':True, 'pre_trained_tokenizer':dataset.tokenizer})
         validationset = Wrapper.wrapperTo(modelConfig.modelClass)(standard,valid_params)
+        
+        if modelConfig.do_inference:
+            standard = config.models[modelIndex-1].inference['method'](model,inference_loader,config.device,**config.models[modelIndex-1].inference['params'])
+            infer_params = copy.deepcopy(modelConfig.training['dataset']['params'])
+            infer_params.update({'validation_set':True, 'pre_trained_tokenizer':dataset.tokenizer})
+            inferenceset = Wrapper.wrapperTo(modelConfig.modelClass)(standard,infer_params)
     else:
         dataset = modelConfig.training['dataset']['class'](**modelConfig.training['dataset']['params']) 
 
@@ -53,10 +59,6 @@ for modelIndex in range(len(config.models)):
         else:
             loss = None
         if modelConfig.training['optimizer']!=None:
-            '''
-            TODO: Bart doesn't have parameters()
-            Possible solution -> Complitely drop optimizer for Bart
-            '''
             optimizer = modelConfig.training['optimizer']['class'](model.parameters(),**modelConfig.training['optimizer']['params'])
         else:
             optimizer = None
@@ -70,21 +72,18 @@ for modelIndex in range(len(config.models)):
         if modelConfig.modelParams['tokenizer']: #There must be an embedding layer -> extract dimension
             embedding_dim = torch.load(modelConfig.pretrained_model)['embedding.embedding.weight'].shape
             model = modelConfig.modelClass(tokenizer = embedding_dim, **modelConfig.modelParams['params'])
-        else:
-            model = modelConfig.modelClass(**modelConfig.modelParams['params'])
-        model.load_state_dict(torch.load(modelConfig.pretrained_model))
-    if modelConfig.do_inference:
-        inferenceset = modelConfig.inference['dataset']['class'](**modelConfig.inference['dataset']['params'],
-        validation_set=True, pre_trained_tokenizer = dataset.tokenizer) 
+        model.load(modelConfig.pretrained_model)
+    
+    followingModelExists = modelIndex+1<len(config.models)
+    followingModelDoInference = False
+    if followingModelExists:
+        followingModelDoInference = config.models[modelIndex+1].do_inference
+
+    if modelConfig.do_inference or followingModelDoInference:
+        if not modelConfig.from_previous:
+            inferenceset = modelConfig.inference['dataset']['class'](**modelConfig.inference['dataset']['params'],
+            validation_set=True, pre_trained_tokenizer = dataset.tokenizer)  
+          
         inference_loader = modelConfig.inference['dataloader']['class'](inferenceset,**modelConfig.inference['dataloader']['params'])
         docs_summary = modelConfig.inference['method'](model,inference_loader,config.device,**modelConfig.inference['params'])
-
-'''
-TODO
-- Tune bart parameters (outputlog, epochs, checkpoint)
-- Remove automatic wandb when calling huggingface trainer
-- Add bartDataset by reading from file for inference
-- Implement bart Inference
-- rename all ContentRanking modules
-- Move prepocess/dataloader in tokenizers and dataloaders folder
-'''
+        print('step')

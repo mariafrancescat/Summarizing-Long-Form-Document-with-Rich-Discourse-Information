@@ -69,6 +69,9 @@ class ContentRanking(nn.Module):
         sections_importance = torch.swapaxes(sections_importance,0,1)
         return sections_importance, sentences_importance
 
+    def load(self,model):
+        self.load_state_dict(torch.load(model))
+
 
 class ExtractiveSummarization(nn.Module):
     def __init__(self):

@@ -41,17 +41,20 @@ class ArxivDataLoader(DataLoader):
         return data, section_importance, sentence_importance
 
 class BartDataLoader():
-    def __init__(self, dataset, batch_size=32, encoder_max_length=100, decoder_max_length=20, device='cpu', shuffle=False):
+    def __init__(self, dataset, batch_size=32, encoder_max_length=100, decoder_max_length=20,
+     device='cpu', shuffle=False,outputFolder=''):
+        self.tokenizer = dataset.tokenizer
+        self.raw_docs = dataset.raw_docs
         self.dataset = dataset().map( 
             lambda x:x,
             batched=True, 
             batch_size=batch_size
         )
         self.dataset.set_format(
-            type="torch", columns=["input_ids", "attention_mask", "decoder_input_ids", "decoder_attention_mask", "labels"],
+            type="torch", columns=['Doc_id', "input_ids", "attention_mask", "decoder_input_ids", "decoder_attention_mask", "labels"],
         )
         self.args = Seq2SeqTrainingArguments(
-            output_dir="./",
+            output_dir=f"./outputs/{outputFolder}/",
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
             predict_with_generate=True,
@@ -65,3 +68,9 @@ class BartDataLoader():
             overwrite_output_dir=True,
             save_total_limit=1
             )
+        
+    def __iter__(self):
+        yield tuple(self.dataset[0].values())
+    
+    def __len__(self):
+        return len(self.dataset)

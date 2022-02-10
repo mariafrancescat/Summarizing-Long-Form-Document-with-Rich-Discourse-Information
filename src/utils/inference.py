@@ -41,4 +41,22 @@ class Inference:
 
     @staticmethod
     def bart(model, inference_loader, device, number_of_sections, number_of_sentences):
-        pass
+        from src.datasets import StandardDataset
+        assert isinstance(model,Bart), 'Model not instance of Bart'
+        input_ids_per_doc_storage = dict()
+        tokenizer = inference_loader.tokenizer.tokenizer
+        for d in inference_loader.dataset:
+            doc_id = d['Doc_id'].item()
+            input_ids = d['input_ids']
+            if doc_id not in input_ids_per_doc_storage.keys():
+                input_ids_per_doc_storage[doc_id] = []
+            input_ids_per_doc_storage[doc_id]+=input_ids
+
+        summary_store = []
+        for doc_id, input_ids in input_ids_per_doc_storage.items():    
+            summary_ids = model.generate(torch.unsqueeze(torch.tensor(input_ids),0), num_beams=4, max_length=25, early_stopping=True)[0]
+            original = ' '.join([tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in input_ids])
+            summary = ' '.join([tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]) 
+            summary_store.append({'doc':doc_id,'sections':[{'title':'Summary','sentences':summary.split('.')}]})
+        
+        return summary_store

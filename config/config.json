@@ -14,7 +14,7 @@
             "config":"bart.json",
             "train":true,
             "pretrained_model":null,
-            "inference":false,
+            "inference":true,
             "from_previous":true
         }
     ],
