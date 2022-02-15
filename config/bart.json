@@ -31,7 +31,7 @@
         "training_dataloader":{
             "class":"BartDataLoader",
             "params":{
-                "batch_size":2,
+                "batch_size":16,
                 "encoder_max_length":40,
                 "decoder_max_length":8,
                 "outputFolder":"Test_run"
